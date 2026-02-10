@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Debug Activity Tracker</title>
+</head>
+<body>
+    <h1>Debug Console</h1>
+    <div id="output"></div>
+
+    <script type="module">
+        import { Activity } from './src/js/models.js';
+        import { StorageManager } from './src/js/storage.js';
+
+        const output = document.getElementById('output');
+
+        function log(msg) {
+            output.innerHTML += '<p>' + msg + '</p>';
+            console.log(msg);
+        }
+
+        try {
+            log('Testing Activity creation...');
+            const activity = new Activity('Study Math', 60);
+            log('Activity created: ' + JSON.stringify(activity, null, 2));
+
+            log('Testing Storage...');
+            const storage = new StorageManager();
+            storage.saveCurrentActivity(activity);
+            log('Activity saved to localStorage');
+
+            const retrieved = storage.getCurrentActivity();
+            log('Retrieved activity: ' + JSON.stringify(retrieved, null, 2));
+
+            log('Testing activity list...');
+            const activities = storage.getActivities();
+            log('Current activities count: ' + activities.length);
+
+        } catch (error) {
+            log('ERROR: ' + error.message);
+            log('Stack: ' + error.stack);
+        }
+    </script>
+</body>
+</html>

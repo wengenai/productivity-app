@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Activity System</title>
+    <style>
+        body { font-family: Arial; padding: 20px; }
+        .log { background: #f0f0f0; padding: 10px; margin: 10px 0; border-left: 3px solid #333; }
+        .error { border-left-color: red; background: #fee; }
+        .success { border-left-color: green; background: #efe; }
+    </style>
+</head>
+<body>
+    <h1>Activity Tracker Test</h1>
+    <button id="testBtn">Run Test</button>
+    <button id="clearBtn">Clear Storage</button>
+    <div id="output"></div>
+
+    <script type="module">
+        import { Activity } from './src/js/models.js';
+        import { StorageManager } from './src/js/storage.js';
+
+        const output = document.getElementById('output');
+
+        function log(msg, type = 'log') {
+            const div = document.createElement('div');
+            div.className = type;
+            div.textContent = msg;
+            output.appendChild(div);
+            console.log(msg);
+        }
+
+        function clearLogs() {
+            output.innerHTML = '';
+        }
+
+        document.getElementById('clearBtn').addEventListener('click', () => {
+            localStorage.clear();
+            log('LocalStorage cleared', 'success');
+        });
+
+        document.getElementById('testBtn').addEventListener('click', async () => {
+            clearLogs();
+
+            try {
+                log('=== Starting Test ===');
+
+                // Test 1: Create activity
+                log('Test 1: Creating activity...');
+                const activity = new Activity('Study Math', 60);
+                log('✓ Activity created: ' + JSON.stringify({
+                    id: activity.id,
+                    name: activity.name,
+                    category: activity.category,
+                    plannedDuration: activity.plannedDuration,
+                    startTime: activity.startTime
+                }, null, 2), 'success');
+
+                // Test 2: Save to storage
+                log('Test 2: Saving to localStorage...');
+                const storage = new StorageManager();
+                storage.saveCurrentActivity(activity);
+                log('✓ Activity saved', 'success');
+
+                // Test 3: Retrieve from storage
+                log('Test 3: Retrieving from localStorage...');
+                const retrieved = storage.getCurrentActivity();
+                if (retrieved) {
+                    log('✓ Activity retrieved: ' + JSON.stringify(retrieved, null, 2), 'success');
+                } else {
+                    log('✗ Failed to retrieve activity!', 'error');
+                }
+
+                // Test 4: Complete activity
+                log('Test 4: Completing activity...');
+                const testActivity = new Activity('Test Activity', 30);
+                testActivity.complete('Actually did this', 'Some notes here');
+                log('✓ Activity completed: ' + JSON.stringify({
+                    endTime: testActivity.endTime,
+                    actualDuration: testActivity.actualDuration,
+                    completed: testActivity.completed,
+                    actualActivity: testActivity.actualActivity,
+                    notes: testActivity.notes
+                }, null, 2), 'success');
+
+                // Test 5: Save completed activity to list
+                log('Test 5: Saving completed activity to list...');
+                const activities = storage.getActivities();
+                activities.push(testActivity);
+                storage.saveActivities(activities);
+                log('✓ Completed activity saved to list', 'success');
+
+                // Test 6: Retrieve activities
+                log('Test 6: Retrieving all activities...');
+                const allActivities = storage.getActivities();
+                log('✓ Found ' + allActivities.length + ' activities', 'success');
+
+                log('=== All Tests Passed! ===', 'success');
+
+            } catch (error) {
+                log('✗ ERROR: ' + error.message, 'error');
+                log('Stack: ' + error.stack, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

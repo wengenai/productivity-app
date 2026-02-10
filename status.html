@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker - Status</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #667eea;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #764ba2;
+            margin-top: 30px;
+        }
+        .status-item {
+            background: #f9f9f9;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border-left: 4px solid #667eea;
+        }
+        .status-item strong {
+            color: #764ba2;
+        }
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #764ba2;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        pre {
+            background: #2d2d2d;
+            color: #f8f8f2;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        .empty {
+            color: #999;
+            font-style: italic;
+        }
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Activity Tracker Status</h1>
+
+        <div>
+            <button onclick="refresh()">🔄 Refresh</button>
+            <button class="danger" onclick="clearAll()">🗑️ Clear All Data</button>
+            <button onclick="addTestActivity()">➕ Add Test Activity</button>
+            <button onclick="addTestCurrentActivity()">⏱️ Start Test Timer</button>
+        </div>
+
+        <h2>Current Activity (Active Timer)</h2>
+        <div id="currentActivity"></div>
+
+        <h2>Completed Activities</h2>
+        <div id="activities"></div>
+
+        <h2>Journal Entries</h2>
+        <div id="journal"></div>
+
+        <h2>To-Do Items</h2>
+        <div id="todos"></div>
+
+        <h2>Raw LocalStorage Data</h2>
+        <div id="rawData"></div>
+    </div>
+
+    <script>
+        function refresh() {
+            displayCurrentActivity();
+            displayActivities();
+            displayJournal();
+            displayTodos();
+            displayRawData();
+        }
+
+        function displayCurrentActivity() {
+            const container = document.getElementById('currentActivity');
+            const data = localStorage.getItem('activityTracker_currentActivity');
+
+            if (!data) {
+                container.innerHTML = '<div class="status-item empty">No active activity</div>';
+                return;
+            }
+
+            try {
+                const activity = JSON.parse(data);
+                const startTime = new Date(activity.startTime);
+                const plannedEnd = new Date(startTime.getTime() + activity.plannedDuration * 60000);
+                const now = new Date();
+                const remaining = Math.max(0, plannedEnd - now);
+                const minutes = Math.floor(remaining / 60000);
+                const seconds = Math.floor((remaining % 60000) / 1000);
+
+                container.innerHTML = `
+                    <div class="status-item">
+                        <strong>Activity:</strong> ${activity.name}<br>
+                        <strong>Category:</strong> ${activity.category}<br>
+                        <strong>Planned Duration:</strong> ${activity.plannedDuration} minutes<br>
+                        <strong>Started:</strong> ${startTime.toLocaleString()}<br>
+                        <strong>Time Remaining:</strong> ${minutes}:${seconds.toString().padStart(2, '0')}<br>
+                        <strong>Status:</strong> ${remaining > 0 ? '<span class="success">In Progress</span>' : '<span class="error">Time Up</span>'}
+                    </div>
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="status-item error">Error parsing current activity: ${error.message}</div>`;
+            }
+        }
+
+        function displayActivities() {
+            const container = document.getElementById('activities');
+            const data = localStorage.getItem('activityTracker_activities');
+
+            if (!data) {
+                container.innerHTML = '<div class="status-item empty">No activities yet</div>';
+                return;
+            }
+
+            try {
+                const activities = JSON.parse(data);
+
+                if (activities.length === 0) {
+                    container.innerHTML = '<div class="status-item empty">No activities yet</div>';
+                    return;
+                }
+
+                const html = activities.slice(-10).reverse().map((activity, index) => {
+                    const startTime = new Date(activity.startTime);
+                    return `
+                        <div class="status-item">
+                            <strong>#${activities.length - index}</strong>: ${activity.actualActivity || activity.name}<br>
+                            <strong>Category:</strong> ${activity.category}<br>
+                            <strong>Duration:</strong> ${activity.actualDuration || activity.plannedDuration} minutes<br>
+                            <strong>Started:</strong> ${startTime.toLocaleString()}<br>
+                            <strong>Completed:</strong> ${activity.completed ? '✅ Yes' : '❌ No'}<br>
+                            ${activity.notes ? `<strong>Notes:</strong> ${activity.notes}<br>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div class="status-item success">Total: ${activities.length} activities</div>
+                    ${html}
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="status-item error">Error parsing activities: ${error.message}</div>`;
+            }
+        }
+
+        function displayJournal() {
+            const container = document.getElementById('journal');
+            const data = localStorage.getItem('activityTracker_journal');
+
+            if (!data) {
+                container.innerHTML = '<div class="status-item empty">No journal entries yet</div>';
+                return;
+            }
+
+            try {
+                const entries = JSON.parse(data);
+
+                if (entries.length === 0) {
+                    container.innerHTML = '<div class="status-item empty">No journal entries yet</div>';
+                    return;
+                }
+
+                const html = entries.slice(-5).reverse().map((entry, index) => {
+                    const timestamp = new Date(entry.timestamp);
+                    return `
+                        <div class="status-item">
+                            <strong>${entry.type === 'learning' ? '📚' : '💭'} ${entry.type}</strong><br>
+                            ${entry.content}<br>
+                            <strong>Tags:</strong> ${entry.tags.join(', ') || 'none'}<br>
+                            <strong>Date:</strong> ${timestamp.toLocaleString()}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div class="status-item success">Total: ${entries.length} entries</div>
+                    ${html}
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="status-item error">Error parsing journal: ${error.message}</div>`;
+            }
+        }
+
+        function displayTodos() {
+            const container = document.getElementById('todos');
+            const data = localStorage.getItem('activityTracker_todos');
+
+            if (!data) {
+                container.innerHTML = '<div class="status-item empty">No todos yet</div>';
+                return;
+            }
+
+            try {
+                const todos = JSON.parse(data);
+
+                if (todos.length === 0) {
+                    container.innerHTML = '<div class="status-item empty">No todos yet</div>';
+                    return;
+                }
+
+                const html = todos.map((todo, index) => {
+                    return `
+                        <div class="status-item">
+                            <strong>${todo.completed ? '✅' : '⬜'}</strong> ${todo.title}<br>
+                            ${todo.dueDate ? `<strong>Due:</strong> ${new Date(todo.dueDate).toLocaleString()}<br>` : ''}
+                            ${todo.reminder ? `<strong>Reminder:</strong> ${new Date(todo.reminder).toLocaleString()}<br>` : ''}
+                        </div>
+                    `;
+                }).join('');
+
+                container.innerHTML = `
+                    <div class="status-item success">Total: ${todos.length} todos</div>
+                    ${html}
+                `;
+            } catch (error) {
+                container.innerHTML = `<div class="status-item error">Error parsing todos: ${error.message}</div>`;
+            }
+        }
+
+        function displayRawData() {
+            const container = document.getElementById('rawData');
+            const keys = [
+                'activityTracker_currentActivity',
+                'activityTracker_activities',
+                'activityTracker_journal',
+                'activityTracker_todos'
+            ];
+
+            const html = keys.map(key => {
+                const data = localStorage.getItem(key);
+                return `
+                    <h3>${key}</h3>
+                    <pre>${data || '<span class="empty">null</span>'}</pre>
+                `;
+            }).join('');
+
+            container.innerHTML = html;
+        }
+
+        function clearAll() {
+            if (confirm('Are you sure you want to delete ALL data? This cannot be undone!')) {
+                localStorage.clear();
+                alert('All data cleared!');
+                refresh();
+            }
+        }
+
+        function addTestActivity() {
+            const activities = JSON.parse(localStorage.getItem('activityTracker_activities') || '[]');
+            const now = new Date();
+
+            activities.push({
+                id: Date.now() + Math.random(),
+                name: "Test Activity",
+                category: "study",
+                plannedDuration: 30,
+                startTime: now.toISOString(),
+                endTime: new Date(now.getTime() + 30 * 60000).toISOString(),
+                actualDuration: 30,
+                completed: true,
+                actualActivity: "Studied React Hooks",
+                notes: "This is a test activity created from the status page"
+            });
+
+            localStorage.setItem('activityTracker_activities', JSON.stringify(activities));
+            alert('Test activity added!');
+            refresh();
+        }
+
+        function addTestCurrentActivity() {
+            const now = new Date();
+            const currentActivity = {
+                id: Date.now() + Math.random(),
+                name: "Test Timer Activity",
+                category: "study",
+                plannedDuration: 5,  // 5 minutes
+                startTime: now.toISOString(),
+                endTime: null,
+                actualDuration: null,
+                completed: false,
+                actualActivity: null,
+                notes: ''
+            };
+
+            localStorage.setItem('activityTracker_currentActivity', JSON.stringify(currentActivity));
+            alert('Test current activity started! Reload the main app to see the timer.');
+            refresh();
+        }
+
+        // Auto-refresh current activity timer every second
+        setInterval(() => {
+            const data = localStorage.getItem('activityTracker_currentActivity');
+            if (data) {
+                displayCurrentActivity();
+            }
+        }, 1000);
+
+        // Initial load
+        refresh();
+    </script>
+</body>
+</html>

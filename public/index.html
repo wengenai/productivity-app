@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Activity Tracker</title>
+    <link rel="stylesheet" href="../src/css/styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Activity Tracker</h1>
+            <div id="timeRemaining" class="time-remaining"></div>
+        </header>
+
+        <nav class="main-nav">
+            <button class="nav-btn active" data-view="activity">Track Activity</button>
+            <button class="nav-btn" data-view="journal">Journal</button>
+            <button class="nav-btn" data-view="todos">To-Do List</button>
+            <button class="nav-btn" data-view="summary">Summary</button>
+            <button class="nav-btn" data-view="settings">⚙️ Settings</button>
+        </nav>
+
+        <main>
+            <!-- Activity Tracking View -->
+            <section id="activityView" class="view active">
+                <div id="currentActivitySection" class="hidden">
+                    <div class="current-activity-card">
+                        <h2>Current Activity</h2>
+                        <div id="currentActivityInfo"></div>
+                        <div id="activityTimer" class="timer"></div>
+                        <button id="completeActivityBtn" class="btn-primary">Complete Activity</button>
+                    </div>
+                </div>
+
+                <div id="newActivitySection">
+                    <h2>What do you want to do next?</h2>
+                    <form id="activityForm">
+                        <div class="form-group">
+                            <label for="activityName">Activity:</label>
+                            <input type="text" id="activityName" required placeholder="e.g., Study Math, Go to gym, Lunch with friends">
+                        </div>
+                        <div class="form-group">
+                            <label for="activityDuration">Duration:</label>
+                            <input type="text" id="activityDuration" required placeholder="60 or 1h or 1h30m">
+                            <small style="color: #6c757d; font-size: 0.85em;">Examples: 60, 1h, 1h30m, 45m</small>
+                        </div>
+                        <button type="submit" class="btn-primary">Start Activity</button>
+                    </form>
+                </div>
+
+                <div id="activityHistory" class="activity-history">
+                    <h3>Recent Activities</h3>
+                    <div id="activityList"></div>
+                </div>
+            </section>
+
+            <!-- Journal View -->
+            <section id="journalView" class="view">
+                <div class="journal-input">
+                    <h2>Record Learning or Thought</h2>
+                    <form id="journalForm">
+                        <div class="form-group">
+                            <textarea id="journalContent" required placeholder="What's on your mind?"></textarea>
+                            <div id="journalTypeIndicator" class="hidden"></div>
+                        </div>
+                        <div class="form-group">
+                            <label for="journalTags">Tags (comma-separated):</label>
+                            <input type="text" id="journalTags" placeholder="productivity, mindfulness, coding">
+                            <div id="journalTagSuggestions" class="tag-suggestions-container"></div>
+                        </div>
+                        <button type="submit" class="btn-primary">Save</button>
+                    </form>
+                </div>
+
+                <div class="journal-filters">
+                    <h3>Filter by Tag</h3>
+                    <div id="tagFilters"></div>
+                </div>
+
+                <div id="journalEntries" class="journal-list"></div>
+            </section>
+
+            <!-- To-Do List View -->
+            <section id="todosView" class="view">
+                <h2>To-Do List & Reminders</h2>
+                <form id="todoForm">
+                    <div class="form-group">
+                        <label for="todoTitle">Task:</label>
+                        <input type="text" id="todoTitle" required placeholder="Buy groceries">
+                    </div>
+                    <div class="form-group">
+                        <label for="todoDueDate">Due Date:</label>
+                        <input type="datetime-local" id="todoDueDate">
+                    </div>
+                    <div class="form-group">
+                        <label for="todoReminder">Reminder:</label>
+                        <input type="datetime-local" id="todoReminder">
+                    </div>
+                    <button type="submit" class="btn-primary">Add To-Do</button>
+                </form>
+
+                <div id="todoList" class="todo-list"></div>
+            </section>
+
+            <!-- Summary View -->
+            <section id="summaryView" class="view">
+                <h2>Activity Summary</h2>
+                <div class="summary-tabs">
+                    <button class="summary-tab active" data-period="daily">Daily</button>
+                    <button class="summary-tab" data-period="weekly">Weekly</button>
+                    <button class="summary-tab" data-period="monthly">Monthly</button>
+                </div>
+                <div id="summaryContent" class="summary-content"></div>
+            </section>
+
+            <!-- Settings View -->
+            <section id="settingsView" class="view">
+                <h2>⚙️ Settings</h2>
+
+                <div class="settings-section">
+                    <h3>🤖 AI Categorization (Claude)</h3>
+                    <p class="settings-description">
+                        Use Claude AI to intelligently categorize activities. Hybrid mode uses keywords first (free), then AI for ambiguous cases.
+                    </p>
+
+                    <div class="form-group">
+                        <label for="anthropicApiKey">Anthropic API Key:</label>
+                        <input type="password" id="anthropicApiKey" placeholder="sk-ant-...">
+                        <small>Get your API key from <a href="https://console.anthropic.com/" target="_blank">console.anthropic.com</a></small>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="categorizationMode">Categorization Mode:</label>
+                        <select id="categorizationMode">
+                            <option value="never">Keywords Only (Free)</option>
+                            <option value="hybrid" selected>Hybrid (Recommended)</option>
+                            <option value="always">Always AI</option>
+                        </select>
+                        <small>
+                            <strong>Keywords Only:</strong> Free, fast, works offline<br>
+                            <strong>Hybrid:</strong> Uses keywords first, AI for unclear cases (~$0.25 per 1000 activities)<br>
+                            <strong>Always AI:</strong> Uses Claude for all categorizations (~$0.25 per 1000 activities)
+                        </small>
+                    </div>
+
+                    <button id="saveSettingsBtn" class="btn-primary">Save Settings</button>
+                    <button id="clearCacheBtn" class="btn-secondary">Clear AI Cache</button>
+
+                    <div id="cacheStats" class="settings-info"></div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>📊 Data Management</h3>
+                    <button id="clearAllDataBtn" class="btn-danger">Clear All App Data</button>
+                    <small>This will delete all activities, journal entries, and todos. This cannot be undone!</small>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Activity Completion Modal -->
+    <div id="completionModal" class="modal hidden">
+        <div class="modal-content">
+            <h2>Activity Complete!</h2>
+            <p>Did you complete the planned activity?</p>
+            <form id="completionForm">
+                <div class="form-group">
+                    <label for="actualActivity">What did you actually do?</label>
+                    <input type="text" id="actualActivity" placeholder="Same as planned or different?">
+                </div>
+                <div class="form-group">
+                    <label for="activityNotes">Notes (optional):</label>
+                    <textarea id="activityNotes" placeholder="Any thoughts or details?"></textarea>
+                </div>
+                <div class="form-group">
+                    <label>
+                        <input type="checkbox" id="saveToJournal">
+                        Save a learning or thought to journal
+                    </label>
+                </div>
+                <div id="journalSection" class="form-group hidden">
+                    <div class="form-group">
+                        <textarea id="completionJournalContent" placeholder="What did you learn or think about?"></textarea>
+                        <div id="completionJournalTypeIndicator" class="hidden"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="completionJournalTags">Tags (comma-separated):</label>
+                        <input type="text" id="completionJournalTags" placeholder="productivity, focus, insight">
+                        <div id="completionJournalTagSuggestions" class="tag-suggestions-container"></div>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="submit" class="btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="../src/js/app.js?v=5" type="module"></script>
+</body>
+</html>
