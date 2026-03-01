@@ -7,7 +7,7 @@ export class Activity {
         this.id = Date.now() + Math.random();
         this.name = name;
         this.category = categorizeActivitySync(name); // Quick keyword categorization
-        this.plannedDuration = plannedDuration; // in minutes
+        this.plannedDuration = plannedDuration ?? null; // in minutes, null = stopwatch mode
         this.startTime = startTime || new Date();
         this.endTime = null;
         this.actualDuration = null;

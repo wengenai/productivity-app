@@ -115,9 +115,9 @@ export function parseDuration(input) {
 
     const trimmed = input.trim().toLowerCase();
 
-    // Empty input
+    // Empty input — stopwatch mode (no planned duration)
     if (!trimmed) {
-        return { success: false, minutes: null, error: 'Duration cannot be empty' };
+        return { success: true, minutes: null, error: null };
     }
 
     // Plain number (default to minutes)

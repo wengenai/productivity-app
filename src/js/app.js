@@ -45,9 +45,14 @@ class ActivityTrackerApp {
     }
 
     setupEventListeners() {
-        // Navigation
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', (e) => this.switchView(e.target.dataset.view));
+        // Navigation - bottom tab bar
+        document.querySelectorAll('.tab-btn').forEach(btn => {
+            btn.addEventListener('click', (e) => this.switchView(e.target.closest('.tab-btn').dataset.view));
+        });
+
+        // Settings gear icon
+        document.getElementById('settingsGearBtn').addEventListener('click', () => {
+            this.switchView('settings');
         });
 
         // Activity form
@@ -201,19 +206,24 @@ class ActivityTrackerApp {
     checkCurrentActivity() {
         if (this.currentActivity) {
             console.log('Checking current activity:', this.currentActivity);
-            const startTime = new Date(this.currentActivity.startTime);
-            const plannedEnd = new Date(startTime.getTime() + this.currentActivity.plannedDuration * 60000);
-            const now = new Date();
+            const hasDuration = this.currentActivity.plannedDuration != null && this.currentActivity.plannedDuration > 0;
 
-            console.log('Start time:', startTime);
-            console.log('Planned end:', plannedEnd);
-            console.log('Now:', now);
+            if (hasDuration) {
+                const startTime = new Date(this.currentActivity.startTime);
+                const plannedEnd = new Date(startTime.getTime() + this.currentActivity.plannedDuration * 60000);
+                const now = new Date();
 
-            if (now >= plannedEnd) {
-                console.log('Activity time is up, showing completion modal');
-                this.showCompletionModal();
+                if (now >= plannedEnd) {
+                    console.log('Activity time is up, showing completion modal');
+                    this.showCompletionModal();
+                } else {
+                    console.log('Activity in progress, showing current activity and starting timer');
+                    this.showCurrentActivity();
+                    this.startActivityTimer();
+                }
             } else {
-                console.log('Activity in progress, showing current activity and starting timer');
+                // Stopwatch mode — always show current activity with running stopwatch
+                console.log('Stopwatch mode, showing current activity');
                 this.showCurrentActivity();
                 this.startActivityTimer();
             }
@@ -257,12 +267,15 @@ class ActivityTrackerApp {
         document.getElementById('currentActivitySection').classList.remove('hidden');
 
         const categoryIcon = getCategoryIcon(this.currentActivity.category);
+        const durationText = this.currentActivity.plannedDuration
+            ? `${this.currentActivity.plannedDuration} minutes`
+            : 'No limit (stopwatch)';
         const info = document.getElementById('currentActivityInfo');
         info.innerHTML = `
             <div class="activity-details">
                 <p><strong>Activity:</strong> ${this.currentActivity.name}</p>
                 <p><strong>Category:</strong> ${categoryIcon} ${this.currentActivity.category}</p>
-                <p><strong>Planned Duration:</strong> ${this.currentActivity.plannedDuration} minutes</p>
+                <p><strong>Duration:</strong> ${durationText}</p>
             </div>
         `;
     }
@@ -273,30 +286,56 @@ class ActivityTrackerApp {
             clearInterval(this.currentTimer);
         }
 
-        const updateTimer = () => {
-            const startTime = new Date(this.currentActivity.startTime);
-            const plannedEnd = new Date(startTime.getTime() + this.currentActivity.plannedDuration * 60000);
-            const now = new Date();
-            const remaining = plannedEnd - now;
+        const hasDuration = this.currentActivity.plannedDuration != null && this.currentActivity.plannedDuration > 0;
 
-            console.log('Timer update - remaining:', remaining);
+        if (hasDuration) {
+            // Countdown mode (existing behavior)
+            const updateTimer = () => {
+                const startTime = new Date(this.currentActivity.startTime);
+                const plannedEnd = new Date(startTime.getTime() + this.currentActivity.plannedDuration * 60000);
+                const now = new Date();
+                const remaining = plannedEnd - now;
 
-            if (remaining <= 0) {
-                clearInterval(this.currentTimer);
+                if (remaining <= 0) {
+                    clearInterval(this.currentTimer);
+                    document.getElementById('activityTimer').innerHTML =
+                        '<div class="timer-complete">Time is up! Please complete the activity.</div>';
+                    this.showCompletionModal();
+                } else {
+                    const minutes = Math.floor(remaining / 60000);
+                    const seconds = Math.floor((remaining % 60000) / 1000);
+                    document.getElementById('activityTimer').innerHTML =
+                        `<div class="timer-active">${minutes}:${seconds.toString().padStart(2, '0')} remaining</div>`;
+                }
+            };
+
+            updateTimer();
+            this.currentTimer = setInterval(updateTimer, 1000);
+        } else {
+            // Stopwatch mode (counts up, no auto-completion)
+            const updateStopwatch = () => {
+                const startTime = new Date(this.currentActivity.startTime);
+                const now = new Date();
+                const elapsed = now - startTime;
+
+                const hours = Math.floor(elapsed / 3600000);
+                const minutes = Math.floor((elapsed % 3600000) / 60000);
+                const seconds = Math.floor((elapsed % 60000) / 1000);
+
+                let display;
+                if (hours > 0) {
+                    display = `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                } else {
+                    display = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+                }
+
                 document.getElementById('activityTimer').innerHTML =
-                    '<div class="timer-complete">Time is up! Please complete the activity.</div>';
-                this.showCompletionModal();
-            } else {
-                const minutes = Math.floor(remaining / 60000);
-                const seconds = Math.floor((remaining % 60000) / 1000);
-                const timerHTML = `<div class="timer-active">${minutes}:${seconds.toString().padStart(2, '0')} remaining</div>`;
-                console.log('Setting timer HTML:', timerHTML);
-                document.getElementById('activityTimer').innerHTML = timerHTML;
-            }
-        };
+                    `<div class="timer-active">${display} elapsed</div>`;
+            };
 
-        updateTimer();
-        this.currentTimer = setInterval(updateTimer, 1000);
+            updateStopwatch();
+            this.currentTimer = setInterval(updateStopwatch, 1000);
+        }
         console.log('Timer started, interval ID:', this.currentTimer);
     }
 
@@ -487,7 +526,7 @@ class ActivityTrackerApp {
                         </div>
                         <div class="activity-meta">
                             <span>${formatDate(new Date(activity.startTime))}</span>
-                            <span>${activity.actualDuration || activity.plannedDuration} min</span>
+                            <span>${activity.actualDuration || activity.plannedDuration ? `${activity.actualDuration || activity.plannedDuration} min` : '—'}</span>
                         </div>
                         ${activity.notes ? `<p class="activity-notes">${activity.notes}</p>` : ''}
                     </div>
@@ -799,8 +838,20 @@ class ActivityTrackerApp {
     }
 
     switchView(viewName) {
-        document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
-        document.querySelector(`[data-view="${viewName}"]`).classList.add('active');
+        // Clear active state from tab buttons
+        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+
+        // Set active tab (if it exists — settings won't be in tab bar)
+        const activeTab = document.querySelector(`.tab-btn[data-view="${viewName}"]`);
+        if (activeTab) {
+            activeTab.classList.add('active');
+        }
+
+        // Toggle settings gear icon active state
+        const settingsBtn = document.getElementById('settingsGearBtn');
+        if (settingsBtn) {
+            settingsBtn.classList.toggle('active', viewName === 'settings');
+        }
 
         document.querySelectorAll('.view').forEach(view => view.classList.remove('active'));
         document.getElementById(`${viewName}View`).classList.add('active');

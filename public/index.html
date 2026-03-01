@@ -9,17 +9,14 @@
 <body>
     <div class="container">
         <header>
-            <h1>Activity Tracker</h1>
-            <div id="timeRemaining" class="time-remaining"></div>
+            <div class="header-content">
+                <h1>Activity Tracker</h1>
+                <div class="header-right">
+                    <div id="timeRemaining" class="time-remaining"></div>
+                    <button id="settingsGearBtn" class="settings-gear-btn" aria-label="Settings" title="Settings">&#9881;</button>
+                </div>
+            </div>
         </header>
-
-        <nav class="main-nav">
-            <button class="nav-btn active" data-view="activity">Track Activity</button>
-            <button class="nav-btn" data-view="journal">Journal</button>
-            <button class="nav-btn" data-view="todos">To-Do List</button>
-            <button class="nav-btn" data-view="summary">Summary</button>
-            <button class="nav-btn" data-view="settings">⚙️ Settings</button>
-        </nav>
 
         <main>
             <!-- Activity Tracking View -->
@@ -41,9 +38,9 @@
                             <input type="text" id="activityName" required placeholder="e.g., Study Math, Go to gym, Lunch with friends">
                         </div>
                         <div class="form-group">
-                            <label for="activityDuration">Duration:</label>
-                            <input type="text" id="activityDuration" required placeholder="60 or 1h or 1h30m">
-                            <small style="color: #6c757d; font-size: 0.85em;">Examples: 60, 1h, 1h30m, 45m</small>
+                            <label for="activityDuration">Duration (optional):</label>
+                            <input type="text" id="activityDuration" placeholder="Leave blank for stopwatch">
+                            <small style="color: #6c757d; font-size: 0.85em;">Examples: 60, 1h, 1h30m — or leave empty to use a stopwatch</small>
                         </div>
                         <button type="submit" class="btn-primary">Start Activity</button>
                     </form>
@@ -159,6 +156,25 @@
         </main>
     </div>
 
+    <nav class="bottom-tab-bar">
+        <button class="tab-btn active" data-view="activity">
+            <span class="tab-icon">&#9201;</span>
+            <span class="tab-label">Track</span>
+        </button>
+        <button class="tab-btn" data-view="journal">
+            <span class="tab-icon">&#128221;</span>
+            <span class="tab-label">Journal</span>
+        </button>
+        <button class="tab-btn" data-view="todos">
+            <span class="tab-icon">&#9745;</span>
+            <span class="tab-label">To-Do</span>
+        </button>
+        <button class="tab-btn" data-view="summary">
+            <span class="tab-icon">&#128202;</span>
+            <span class="tab-label">Summary</span>
+        </button>
+    </nav>
+
     <!-- Activity Completion Modal -->
     <div id="completionModal" class="modal hidden">
         <div class="modal-content">
@@ -197,6 +213,6 @@
         </div>
     </div>
 
-    <script src="../src/js/app.js?v=5" type="module"></script>
+    <script src="../src/js/app.js" type="module"></script>
 </body>
 </html>
